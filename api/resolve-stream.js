@@ -1,6 +1,5 @@
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -20,125 +19,120 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 module.exports = async (req, res) => {
-  // CORS support
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { path } = req.query;
-    if (!path) {
-      return res.status(400).json({ error: 'Missing path parameter' });
-    }
+    let { path } = req.query;
+    if (!path) return res.status(400).json({ error: 'Missing path parameter' });
+
+    // 🚨 1. الجراحة الأولى: تنظيف المسار تماماً من (series/ ومن .mp4 ومن أي سلاش زائدة)
+    let cleanTarget = decodeURIComponent(path)
+      .replace(/^\//, '')
+      .replace(/^series\//i, '')
+      .replace(/^movies\//i, '')
+      .replace(/\.(mp4|mkv|m3u8|webm)$/i, '')
+      .trim();
+
+    // بناء الاحتمالين للبحث (بـ series ومن غيرها)
+    const pathVariants = [cleanTarget, `series/${cleanTarget}`, `movies/${cleanTarget}`];
 
     let foundUrl = null;
 
-    // Step 1: Search direct matching document where virtual_path === path
-    const directQuery = await db.collection('content')
-      .where('virtual_path', '==', path)
-      .limit(1)
-      .get();
-
-    if (!directQuery.empty) {
-      const doc = directQuery.docs[0];
-      const data = doc.data();
-      foundUrl = data.telegramOriginalUrl || (data.servers && data.servers[0] && data.servers[0].url);
+    // Step 1: Search direct matching document
+    for (const variant of pathVariants) {
+      const directQuery = await db.collection('content').where('virtual_path', '==', variant).limit(1).get();
+      if (!directQuery.empty) {
+        const data = directQuery.docs[0].data();
+        foundUrl = data.telegramOriginalUrl || (data.servers && data.servers[0] && (data.servers[0].url || data.servers[0].downloadUrl));
+        break;
+      }
     }
 
-    // Step 2: If not found, check if it's a series episode by parent path slice
+    // Step 2: Parent path slice matching
     if (!foundUrl) {
-      const segments = path.split('/');
+      const segments = cleanTarget.split('/');
       if (segments.length >= 3) {
-        // Derive parent path by removing the last 2 segments (e.g. S1/E01)
-        const parentPath = segments.slice(0, -2).join('/');
+        const parentVariants = [
+          segments.slice(0, -2).join('/'),
+          `series/${segments.slice(0, -2).join('/')}`
+        ];
         
-        const parentQuery = await db.collection('content')
-          .where('virtual_path', '==', parentPath)
-          .limit(1)
-          .get();
-
-        if (!parentQuery.empty) {
-          const parentData = parentQuery.docs[0].data();
-          
-          if (parentData.seasons) {
-            for (const season of parentData.seasons) {
-              if (season.episodes) {
-                const matchedEpisode = season.episodes.find(ep => ep.virtual_path === path);
-                if (matchedEpisode) {
-                  foundUrl = matchedEpisode.telegramOriginalUrl || (matchedEpisode.servers && matchedEpisode.servers[0] && matchedEpisode.servers[0].url);
-                  break;
+        for (const pPath of parentVariants) {
+          const parentQuery = await db.collection('content').where('virtual_path', '==', pPath).limit(1).get();
+          if (!parentQuery.empty) {
+            const parentData = parentQuery.docs[0].data();
+            if (parentData.seasons) {
+              for (const season of parentData.seasons) {
+                if (season.episodes) {
+                  const matchedEpisode = season.episodes.find(ep => {
+                    const epClean = (ep.virtual_path || '').replace(/^series\//i, '').replace(/\.mp4$/i, '');
+                    return epClean === cleanTarget || epClean.endsWith(segments[segments.length - 1]);
+                  });
+                  if (matchedEpisode) {
+                    foundUrl = matchedEpisode.telegramOriginalUrl || (matchedEpisode.servers && matchedEpisode.servers[0] && (matchedEpisode.servers[0].url || matchedEpisode.servers[0].downloadUrl));
+                    break;
+                  }
                 }
               }
             }
           }
+          if (foundUrl) break;
         }
       }
     }
 
-    // Step 3: Deep Scan all series documents in case virtual path formats are highly customized or have extra nesting
+    // Step 3: Deep Scan with loose matching
     if (!foundUrl) {
-      const allSeriesQuery = await db.collection('content')
-        .where('type', '==', 'series')
-        .get();
+      const allSeriesQuery = await db.collection('content').where('type', '==', 'series').get();
+      const targetEpName = cleanTarget.split('/').pop(); // هيقفل على E01
 
       for (const doc of allSeriesQuery.docs) {
         const data = doc.data();
         if (data.seasons) {
-          let found = false;
           for (const season of data.seasons) {
             if (season.episodes) {
-              const matchedEpisode = season.episodes.find(ep => ep.virtual_path === path);
+              const matchedEpisode = season.episodes.find(ep => {
+                const vPath = ep.virtual_path || '';
+                return vPath.includes(cleanTarget) || vPath.endsWith(targetEpName);
+              });
               if (matchedEpisode) {
-                foundUrl = matchedEpisode.telegramOriginalUrl || (matchedEpisode.servers && matchedEpisode.servers[0] && matchedEpisode.servers[0].url);
-                found = true;
+                foundUrl = matchedEpisode.telegramOriginalUrl || (matchedEpisode.servers && matchedEpisode.servers[0] && (matchedEpisode.servers[0].url || matchedEpisode.servers[0].downloadUrl));
                 break;
               }
             }
           }
-          if (found) break;
         }
-      }
-    }
-
-    // Step 4: Check movies using a full list if direct query didn't succeed
-    if (!foundUrl) {
-      const allMoviesQuery = await db.collection('content')
-        .where('type', '==', 'movie')
-        .get();
-
-      for (const doc of allMoviesQuery.docs) {
-        const data = doc.data();
-        if (data.virtual_path === path) {
-          foundUrl = data.telegramOriginalUrl || (data.servers && data.servers[0] && data.servers[0].url);
-          break;
-        }
+        if (foundUrl) break;
       }
     }
 
     if (!foundUrl) {
-      return res.status(404).json({ error: 'Virtual stream path not found' });
+      return res.status(404).json({ error: 'Virtual stream path not found in DB', attempted: cleanTarget });
     }
 
-    // Extract message ID and hash from Telegram original URL
-    const match = foundUrl.match(/\/stream\/(\d+)\?hash=([a-zA-Z0-9]+)/);
-    if (!match) {
+    // 🚨 2. الجراحة الثانية: صائد الـ ID والـ Hash المرن (بيصطاد من أي صيغة لينك)
+    // بيبحث عن رقم بعد كلمة stream/ وعن أي هاش سواء كان ?hash= أو &hash=
+    const idMatch = foundUrl.match(/\/stream\/(\d+)/);
+    const hashMatch = foundUrl.match(/[?&]hash=([a-zA-Z0-9]+)/);
+
+    if (!idMatch || !hashMatch) {
       return res.status(422).json({ 
-        error: 'URL format mismatch. Found stream URL does not follow the required pattern.',
-        url: foundUrl 
+        error: 'Regex extraction failed on the target URL',
+        raw_url_found: foundUrl 
       });
     }
 
     return res.status(200).json({
-      id: match[1],
-      hash: match[2]
+      id: idMatch[1],
+      hash: hashMatch[1]
     });
 
   } catch (error) {
-    console.error('Error in resolve-stream API:', error);
+    console.error('Resolver API Error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
