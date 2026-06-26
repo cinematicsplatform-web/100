@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          // Splash screen logic
+          if (sessionStorage.getItem('splash_shown')) {
+            document.documentElement.classList.add('hide-splash');
+          } else {
+            sessionStorage.setItem('splash_shown', 'true');
+          }
+
+          // 1. إدارة الثيمات
+          var t = localStorage.getItem('cinematix_active_theme');
+          var r = localStorage.getItem('cinematix_theme_ramadan');
+          if (!t && r === 'true') t = 'ramadan';
+          if (t && t !== 'default') {
+            document.documentElement.classList.add('theme-' + t);
+          }
+
+          // تم تعديل الوظيفة للسماح بالتحديد والنسخ دائماً
+          function isSelectionAllowed() {
+            return true; 
+          }
+
+          // 3. تم فتح نظام حماية المحتوى للسماح بالنسخ والمعاينة
+          document.addEventListener('contextmenu', function(e) {
+            if (isSelectionAllowed()) return;
+          }, false);
+
+          document.addEventListener('copy', function(e) {
+            if (isSelectionAllowed()) return;
+          }, false);
+          document.addEventListener('cut', function(e) {
+            if (isSelectionAllowed()) return;
+          }, false);
+
+          document.addEventListener('dragstart', function(e) {
+            if (isSelectionAllowed()) return;
+          }, false);
+
+          document.onselectstart = function() { 
+            return true; 
+          };
+
+          // 4. منع أي محاولة برمجية لتدوير الشاشة لضمان احترام إعدادات النظام فقط
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+
+        } catch (e) {}
+      })();
+    </script>
+    <meta name="google-site-verification" content="EXH46Rn7mAAL5WJwovaVgk4ZYk82r0gINqGVdfFgeqM" />
+    
+    <!-- --- SEO: Allow Full Indexing with Large Previews --- -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- --- PWA Setup & Favicons (Crucial for Google SERP Icon) --- -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/android-chrome-192x192.png" />
+
+    <!-- Mobile Viewport - تم تحسينه لمنع الارتجاج وضمان ثبات التوجه العمودي -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" />
+    
+    <!-- iOS PWA Config -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cinematix">
+
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#000000" />
+
+    <!-- Video.js and IMA SDK for VAST Ads -->
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/2.1.0/videojs.ima.css" rel="stylesheet" />
+    <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
+
+    <!-- Default Meta Tags (Managed by React Helmet in JS, Fallback here) -->
+    <title>مشاهدة افلام ومسلسلات اون لاين - سينماتيكس</title>
+    <meta name="title" content="مشاهدة افلام ومسلسلات اون لاين - سينماتيكس">
+    <meta name="description" content="منصتكم الأولى للترفيه العربي والتركي والأجنبي. شاهدوا أحدث الأفلام والمسلسلات بجودة عالية في أي وقت ومن أي مكان.">
+    
+    <!-- Open Graph / Facebook Fallback -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cinematix.watch/" />
+    <meta property="og:title" content="مشاهدة افلام ومسلسلات اون لاين - سينماتيكس" />
+    <meta property="og:description" content="منصتكم الأولى لمشاهدة الأفلام والمسلسلات اون لاين بجودة عالية." />
+    <meta property="og:image" content="/android-chrome-512x512.png" />
+
+    <!-- Twitter Fallback -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="مشاهدة افلام ومسلسلات اون لاين - سينماتيكس" />
+    <meta name="twitter:description" content="منصتكم الأولى لمشاهدة الأفلام والمسلسلات اون لاين بجودة عالية." />
+    <meta name="twitter:image" content="/android-chrome-512x512.png" />
+
+    <!-- Import Map -->
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^18.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^18.2.0/",
+    "react/": "https://aistudiocdn.com/react@^18.2.0/",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "firebase": "https://aistudiocdn.com/firebase@^12.6.0",
+    "react-dom": "https://aistudiocdn.com/react-dom@^18.2.0",
+    "react-helmet-async": "https://esm.sh/react-helmet-async@2.0.4?external=react,react-dom",
+    "xlsx": "https://esm.sh/xlsx@0.18.5",
+    "jsrsasign": "https://esm.sh/jsrsasign@11.1.0",
+    "fs": "https://aistudiocdn.com/fs@^0.0.1-security",
+    "url": "https://aistudiocdn.com/url@^0.11.4",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.560.0",
+    "next/": "https://esm.sh/next@^16.0.10/",
+    "next": "https://esm.sh/next@^16.0.10",
+    "cheerio": "https://esm.sh/cheerio@^1.1.2",
+    "axios": "https://esm.sh/axios@^1.13.2",
+    "@vercel/edge": "https://esm.sh/@vercel/edge@^1.2.2",
+    "@vercel/node": "https://esm.sh/@vercel/node@^5.5.16",
+    "postscribe": "https://esm.sh/postscribe@^2.0.8",
+    "@noriginmedia/norigin-spatial-navigation": "https://esm.sh/@noriginmedia/norigin-spatial-navigation@^2.3.0"
+  }
+}
+</script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js" type="module"></script>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-ima/2.1.0/videojs.ima.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Lalezar&family=Tajawal:wght@400;500;700;800&family=Roboto:wght@500;700;900&display=swap');
+
+      html, body {
+        direction: rtl !important;
+        text-align: right !important;
+      }
+
+      :root {
+        --bg-body: #141b29;
+        --bg-card: #1f2937;
+        --color-primary-from: #00A7F8;
+        --color-primary-to: #00FFB0;
+        --color-accent: #00A7F8;
+        --color-accent-hover: #00FFB0;
+        --shadow-color: rgba(0, 167, 248, 0.4);
+        --color-text-primary: #ffffff;
+        --border-radius-std: 0.75rem;
+        --color-text-on-primary: #000000;
+      }
+
+      .theme-ramadan {
+        --bg-body: #000000; 
+        --bg-card: #121212;
+        --color-primary-from: #D4AF37; 
+        --color-primary-to: #F59E0B;   
+        --color-accent: #FFD700;       
+        --color-accent-hover: #FDB931;
+        --shadow-color: rgba(212, 175, 55, 0.4);
+        --color-text-on-primary: #000000;
+      }
+
+      .theme-eid {
+        --bg-body: #141b29; 
+        --bg-card: #1f2937;
+        --color-primary-from: #6A0DAD;
+        --color-primary-to: #C0C0C0;
+        --color-accent: #9d4edd;
+        --color-accent-hover: #e0aaff;
+        --shadow-color: rgba(106, 13, 173, 0.4);
+        --color-text-on-primary: #ffffff;
+      }
+
+      .theme-ios {
+        --bg-body: #000000;
+        --bg-card: #1c1c1e;
+        --color-primary-from: #00C6FF;
+        --color-primary-to: #0072FF;
+        --color-accent: #00C6FF;
+        --color-accent-hover: #0072FF;
+        --shadow-color: rgba(0, 198, 255, 0.4);
+        --glass-bg: rgba(255, 255, 255, 0.08);
+        --glass-border: rgba(255, 255, 255, 0.15);
+        --border-radius-std: 1.5rem;
+        --color-text-on-primary: #ffffff;
+      }
+
+      .theme-night-city {
+        --bg-body: #050505;
+        --bg-card: #0f0f0f;
+        --color-primary-from: #FF00FF;
+        --color-primary-to: #00FFFF;
+        --color-accent: #00FFFF;
+        --color-accent-hover: #FF1493;
+        --shadow-color: rgba(0, 255, 255, 0.7);
+        --border-radius-std: 0.25rem;
+        --color-text-on-primary: #000000;
+      }
+
+      .theme-nature {
+        --bg-body: #1a2f2f;
+        --bg-card: #233e3e;
+        --color-primary-from: #8FBC8F;
+        --color-primary-to: #B8860B;
+        --color-accent: #F5DEB3;
+        --color-accent-hover: #DEB887;
+        --color-text-primary: #F5F5DC;
+        --shadow-color: rgba(143, 188, 143, 0.3);
+        --border-radius-std: 1rem;
+        --color-text-on-primary: #ffffff;
+      }
+
+      .theme-cosmic-teal {
+        --bg-body: #0b1116;
+        --bg-card: #161b22;
+        --color-primary-from: #2DD4BF;
+        --color-primary-to: #0F766E;
+        --color-accent: #2DD4BF;
+        --color-accent-hover: #14B8A6;
+        --shadow-color: rgba(45, 212, 191, 0.3);
+        --border-radius-std: 0.75rem;
+        --color-text-on-primary: #000000;
+        background-color: var(--bg-body);
+        background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2011&auto=format&fit=crop');
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+      
+      .theme-cosmic-teal::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            to bottom, 
+            rgba(11, 17, 22, 0.85) 0%, 
+            rgba(11, 17, 22, 0.92) 50%, 
+            #0b1116 100%
+        );
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      .theme-netflix-red {
+        --bg-body: #141414;
+        --bg-card: #1f1f1f;
+        --color-primary-from: #E50914;
+        --color-primary-to: #B20710;
+        --color-accent: #E50914;
+        --color-accent-hover: #ff1f2a;
+        --shadow-color: rgba(229, 9, 20, 0.4);
+        --color-text-primary: #ffffff;
+        --border-radius-std: 0.25rem;
+        --color-text-on-primary: #ffffff;
+      }
+
+      .theme-shahid {
+        --bg-body: #0b0f19;
+        --bg-card: #141a27;
+        --color-primary-from: #1994e5;
+        --color-primary-to: #00ffaa;
+        --color-accent: #1994e5;
+        --color-accent-hover: #00ffaa;
+        --shadow-color: rgba(25, 148, 229, 0.4);
+        --color-text-primary: #ffffff;
+        --border-radius-std: 9999px;
+        --color-text-on-primary: #000000;
+      }
+
+      body {
+        font-family: 'Cairo', sans-serif;
+        background-color: var(--bg-body);
+        color: #fff;
+        transition: background-color 0.5s ease;
+      }
+
+      .hide-splash #preloader {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+      }
+      #preloader {
+        position: fixed;
+        inset: 0;
+        background-color: var(--bg-body);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s ease-in-out;
+        gap: 32px;
+      }
+      #preloader.preloader-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .preloader-logo {
+        font-size: 56px;
+        font-weight: 900;
+        font-family: 'Lalezar', sans-serif;
+        letter-spacing: 1px;
+        color: white;
+        display: flex;
+        align-items: baseline;
+        gap: 2px;
+      }
+
+      .preloader-logo .accent {
+        background: linear-gradient(to left, var(--color-primary-from), var(--color-primary-to));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-fill-color: transparent;
+      }
+
+      .dots-container {
+        display: flex;
+        gap: 12px;
+      }
+      
+      /* تم التعديل إلى preloader-dot لتجنب التعارض مع نقاط React البيضاء */
+      .preloader-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: linear-gradient(to bottom, var(--color-primary-from), var(--color-primary-to));
+        animation: jump 0.8s ease-in-out infinite;
+        box-shadow: 0 4px 10px var(--shadow-color);
+      }
+      .preloader-dot:nth-child(2) { animation-delay: 0.15s; }
+      .preloader-dot:nth-child(3) { animation-delay: 0.3s; }
+      
+      @keyframes jump {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+      }
+    </style>
+<link rel="stylesheet" href="/src/index.css">
+</head>
+  <body>
+    <div id="preloader">
+      <div class="preloader-logo">
+        <span>سينما</span><span class="accent">تيكس</span>
+      </div>
+      <div class="dots-container">
+        <!-- استخدام الكلاس الجديد preloader-dot هنا -->
+        <div class="preloader-dot"></div>
+        <div class="preloader-dot"></div>
+        <div class="preloader-dot"></div>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

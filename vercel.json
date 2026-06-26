@@ -1,0 +1,48 @@
+{
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/rss.xml",
+      "destination": "/api/rss"
+    },
+    {
+      "source": "/feed",
+      "destination": "/api/rss"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/xml"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=3600, stale-while-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/rss.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/xml"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=1800, stale-while-revalidate"
+        }
+      ]
+    }
+  ]
+}

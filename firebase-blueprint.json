@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "GlobalServer": {
+      "title": "Global Server Configuration",
+      "description": "Base domains for streaming servers to dynamically resolve episodic video URLs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "baseDomain": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "baseDomain"]
+    }
+  },
+  "firestore": {
+    "/servers/{serverId}": {
+      "schema": "GlobalServer",
+      "description": "Collection of global video servers and their base domains."
+    }
+  }
+}

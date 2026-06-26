@@ -1,0 +1,75 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helper Functions ---
+    
+    // Check if the user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    // Check if the user is an Admin by reading their role from the users collection
+    function isAdmin() {
+      return isAuth() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // --- Public Content (Read: Everyone, Write: Admin Only) ---
+    
+    // Content (Movies/Series)
+    match /content/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Ads
+    match /ads/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Site Settings
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Servers & Domains (Read: Everyone, Write: Admin Only)
+    match /servers/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Home Sections (Dynamic Layouts)
+    match /home_sections/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- User Data (Private) ---
+    
+    match /users/{userId} {
+      // Users can read/write their own profile
+      // Admins can read/write any profile
+      allow read, write: if (isAuth() && request.auth.uid == userId) || isAdmin();
+    }
+    
+    // --- Interactive Data ---
+    
+    // Content Requests (Create: Anyone, Read/Delete: Admin)
+    // تم توحيد الاسم إلى requests بحروف صغيرة
+    match /requests/{requestId} {
+      allow create: if true;
+      allow read, delete: if isAdmin();
+    }
+    
+    // Reports (Create: Anyone, Read/Update: Admin)
+    match /reports/{reportId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
